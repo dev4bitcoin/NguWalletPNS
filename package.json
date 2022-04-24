@@ -1,0 +1,33 @@
+{
+  "name": "nguwalletpns",
+  "version": "1.0.0",
+  "description": "Push notification service for NguWallet",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.26.1",
+    "bignumber.js": "^9.0.2",
+    "body-parser": "^1.20.0",
+    "compression": "^1.7.4",
+    "config": "^3.3.7",
+    "cors": "^2.8.5",
+    "express": "^4.17.3",
+    "helmet": "^5.0.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^4.5.0",
+    "mongoose": "^6.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivekperumal/NguWalletPNS.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vivekperumal/NguWalletPNS/issues"
+  },
+  "homepage": "https://github.com/vivekperumal/NguWalletPNS#readme"
+}
