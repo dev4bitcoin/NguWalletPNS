@@ -124,8 +124,6 @@ function pushAPNS(txDetail) {
 }
 
 async function processTransactions() {
-    console.log('start processing transaction');
-
     const txs = await Transaction.find() || [];
     console.log(`pulled ${txs.length} transactions`);
     if (txs && txs.length === 0) {
