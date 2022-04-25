@@ -68,9 +68,7 @@ function getAPNSPayload(txDetail) {
 
 function pushAPNS(txDetail) {
     const apnsPayload = getAPNSPayload(txDetail);
-    const publicKey = fs.readFileSync("./config/apns-dev.pem");
-
-    const pemBuffer = Buffer.from(publicKey, "hex");
+    const pemBuffer = Buffer.from(process.env.APNS_PEM, 'base64').toString('ascii');
     const client = http2.connect("https://api.sandbox.push.apple.com", {
         key: pemBuffer,
         cert: pemBuffer,
@@ -80,7 +78,7 @@ function pushAPNS(txDetail) {
 
     const headers = {
         ":method": "POST",
-        "apns-topic": config.get('apns-topic'),
+        "apns-topic": process.env.APNS_TOPIC,
         "apns-collapse-id": uuidv4(),
         "apns-expiration": Math.floor(+new Date() / 1000 + 3600 * 24),
         ":scheme": "https",
@@ -158,7 +156,7 @@ async function processTransactions() {
     }
 
     if (addressesToDelete.length > 0) {
-        await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
+        //await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
     }
 
     if (addressesToSendNotification.length > 0) {
@@ -177,6 +175,7 @@ async function checkConfirmationStatusForTransactions() {
 
 module.exports = async () => {
     console.log("Worker started..");
+
     while (true) {
         console.log((new Date()).toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " "));
         await checkConfirmationStatusForTransactions();

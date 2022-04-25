@@ -1,10 +1,9 @@
 //const winston = require("winston");
 const mongoose = require("mongoose");
-const config = require("config");
 
 module.exports = function () {
     mongoose
-        .connect(config.get("db") || "mongodb://localhost:27017/nguwalletpns", {
+        .connect(process.env.MONGO_DB_URL || "mongodb://localhost:27017/nguwalletpns", {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             dbName: "nguwalletpns",

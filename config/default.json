@@ -1,6 +1,5 @@
 {
     "db": "mongodb://localhost:27017/nguwalletpns",
     "blocksteam_testnet_uri": "https://blockstream.info/testnet/api",
-    "blocksteam_mainnet_uri": "https://blockstream.info/api",
-    "apns-topic": "com.vp.nguwallet"
+    "blocksteam_mainnet_uri": "https://blockstream.info/api"
 }
