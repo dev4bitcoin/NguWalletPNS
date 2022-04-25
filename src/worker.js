@@ -69,7 +69,7 @@ function getAPNSPayload(txDetail) {
 function pushAPNS(txDetail) {
     const apnsPayload = getAPNSPayload(txDetail);
     const pemBuffer = Buffer.from(process.env.APNS_PEM, 'base64').toString('ascii');
-    const client = http2.connect("https://api.sandbox.push.apple.com", {
+    const client = http2.connect(process.env.APNS_PUSH_URL, {
         key: pemBuffer,
         cert: pemBuffer,
     });
@@ -156,7 +156,7 @@ async function processTransactions() {
     }
 
     if (addressesToDelete.length > 0) {
-        //await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
+        await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
     }
 
     if (addressesToSendNotification.length > 0) {
