@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const http2 = require('http2');
 const fs = require('fs');
 const BigNumber = require("bignumber.js");
+const { v4: uuidv4 } = require('uuid');
 
 const BLOCKSTREAM_TESTNET_URI = "https://blockstream.info/testnet/api";
 const BLOCKSTREAM_MAINNET_URI = "https://blockstream.info/api";
@@ -54,9 +55,7 @@ function satoshiToBTC(satoshi) {
     return new BigNumber(satoshi).dividedBy(100000000).toString(10);
 }
 
-function sendNotification(txDetail) {
-    console.log('send notification')
-
+function getAPNSPayload(txDetail) {
     const title = txDetail?.transaction?.isBroadcasted ? 'Transaction Sent' : 'Recieved Transaction';
     const btc = satoshiToBTC(txDetail?.amount);
     const body = txDetail?.transaction?.isBroadcasted ? `Withdrawn ${btc} BTC` : `Recieved Transaction ${btc} BTC`;
@@ -68,10 +67,16 @@ function sendNotification(txDetail) {
                 body: body,
             },
             sound: "default",
+            "content-available": 1
         },
         walletId: txDetail?.transaction.walletId,
     };
 
+    return apnsPayload;
+}
+
+function pushAPNS(txDetail) {
+    const apnsPayload = getAPNSPayload(txDetail);
     const publicKey = fs.readFileSync("./config/apns-dev.pem");
 
     const pemBuffer = Buffer.from(publicKey, "hex");
@@ -85,7 +90,7 @@ function sendNotification(txDetail) {
     const headers = {
         ":method": "POST",
         "apns-topic": '',
-        "apns-collapse-id": txDetail?.transaction?.address,
+        "apns-collapse-id": uuidv4(),
         "apns-expiration": Math.floor(+new Date() / 1000 + 3600 * 24),
         ":scheme": "https",
         ":path": "/3/device/" + txDetail?.transaction?.token,
@@ -129,6 +134,7 @@ function sendNotification(txDetail) {
 
 async function processTransactions() {
     console.log('start processing transaction');
+
     const txs = await Transaction.find() || [];
     console.log(`pulled ${txs.length} transactions`);
     if (txs && txs.length === 0) {
@@ -163,12 +169,14 @@ async function processTransactions() {
     }
 
     if (addressesToDelete.length > 0) {
-        await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
+        //await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
     }
 
     if (addressesToSendNotification.length > 0) {
         for (const tx of addressesToSendNotification) {
-            sendNotification(tx);
+            if (tx?.transaction?.os === "ios") {
+                pushAPNS(tx);
+            }
         }
     }
 }
@@ -183,7 +191,7 @@ async function checkConfirmationStatusForTransactions() {
         .then(async () => {
             console.log("Connected to MongoDB...");
             while (true) {
-                console.log(Date.now());
+                console.log((new Date()).toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " "));
                 await checkConfirmationStatusForTransactions();
             }
         })
