@@ -1,27 +1,16 @@
 const { Transaction } = require("../models/transaction");
 const axios = require('axios');
-const mongoose = require("mongoose");
 const http2 = require('http2');
 const fs = require('fs');
 const BigNumber = require("bignumber.js");
 const { v4: uuidv4 } = require('uuid');
-
-const BLOCKSTREAM_TESTNET_URI = "https://blockstream.info/testnet/api";
-const BLOCKSTREAM_MAINNET_URI = "https://blockstream.info/api";
-
-function connectDB() {
-    return mongoose
-        .connect("mongodb://localhost:27017/nguwalletpns", {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            dbName: "nguwalletpns",
-        })
-
-};
+const config = require("config");
 
 async function getTransactionDetailByAddress(address, isTestnet) {
     try {
-        const result = await axios.get(`${isTestnet ? BLOCKSTREAM_TESTNET_URI : BLOCKSTREAM_MAINNET_URI}/address/${address}/txs`);
+        const result = await axios.get(`${isTestnet ?
+            config.get("blocksteam_testnet_uri") :
+            config.get("blocksteam_mainnet_uri")}/address/${address}/txs`);
         if (result && result.data) {
             return result.data;
         }
@@ -33,7 +22,9 @@ async function getTransactionDetailByAddress(address, isTestnet) {
 }
 
 async function getTransactionDetailByTxId(txId, isTestnet) {
-    const result = await axios.get(`${isTestnet ? BLOCKSTREAM_TESTNET_URI : BLOCKSTREAM_MAINNET_URI}/tx/${txId}`);
+    const result = await axios.get(`${isTestnet ?
+        config.get("blocksteam_testnet_uri") :
+        config.get("blocksteam_mainnet_uri")}/tx/${txId}`);
     if (result && result.data) {
         return result.data;
     }
@@ -89,7 +80,7 @@ function pushAPNS(txDetail) {
 
     const headers = {
         ":method": "POST",
-        "apns-topic": '',
+        "apns-topic": config.get('apns-topic'),
         "apns-collapse-id": uuidv4(),
         "apns-expiration": Math.floor(+new Date() / 1000 + 3600 * 24),
         ":scheme": "https",
@@ -169,7 +160,7 @@ async function processTransactions() {
     }
 
     if (addressesToDelete.length > 0) {
-        //await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
+        await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
     }
 
     if (addressesToSendNotification.length > 0) {
@@ -186,15 +177,10 @@ async function checkConfirmationStatusForTransactions() {
     await new Promise(res => setTimeout(res, 100000))
 }
 
-(async () => {
-    connectDB()
-        .then(async () => {
-            console.log("Connected to MongoDB...");
-            while (true) {
-                console.log((new Date()).toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " "));
-                await checkConfirmationStatusForTransactions();
-            }
-        })
-        .catch((err) => console.error("Could not connect to MongoDB.." + err));;
-
-})()
+module.exports = async () => {
+    console.log("Worker started..");
+    while (true) {
+        console.log((new Date()).toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " "));
+        await checkConfirmationStatusForTransactions();
+    }
+}

@@ -5,6 +5,7 @@ const app = express().use("*", cors());
 require("./startup/routes")(app);
 require("./startup/db")();
 require("./startup/prod")(app);
+require("./src/worker")();
 
 const port = process.env.PORT || 5001;
 
