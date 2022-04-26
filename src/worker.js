@@ -143,6 +143,16 @@ async function processTransactions() {
                     }
                 }
             }
+            else {
+                const dateToCompare = new Date().toISOString().slice(0, 10);
+                const dateToBeCompared = transaction?.addedDate.toISOString().slice(0, 10);
+                const diffInMonths = new Date(dateToCompare) - new Date(dateToBeCompared);
+                const diffInDays = diffInMonths / (1000 * 60 * 60 * 24);
+                console.log(diffInDays);
+                if (diffInDays > 3) {
+                    addressesToDelete.push(transaction._id);
+                }
+            }
         }
 
         if (transaction.isBroadcasted) {
