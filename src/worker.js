@@ -66,6 +66,29 @@ function getAPNSPayload(txDetail) {
     return apnsPayload;
 }
 
+
+function getFCMPayload(txDetail) {
+    const title = txDetail?.transaction?.isBroadcasted ? 'Transaction Sent' : 'Recieved Transaction';
+    const btc = satoshiToBTC(txDetail?.amount);
+    const body = txDetail?.transaction?.isBroadcasted ? `Withdrawn ${btc} BTC` : `Recieved Transaction ${btc} BTC`;
+    const fcmPayload = {
+        data: {
+            walletId: txDetail?.transaction.walletId,
+        },
+        notification: {
+            title: title,
+            body: body,
+            badge: 1,
+            tag: txDetail?.transaction.walletId,
+            sound: "default",
+        },
+
+    };
+
+    return fcmPayload;
+}
+
+
 function pushAPNS(txDetail) {
     const apnsPayload = getAPNSPayload(txDetail);
     const pemBuffer = Buffer.from(process.env.APNS_PEM, 'base64').toString('ascii');
@@ -121,6 +144,29 @@ function pushAPNS(txDetail) {
     request.end();
 }
 
+async function pushFCM(txDetail) {
+    const payload = getFCMPayload(txDetail);
+    payload["to"] = txDetail?.transaction?.token;
+    payload["collapse_key"] = uuidv4();
+    payload["priority"] = "high";
+
+    const headers = {
+        Authorization: "key=" + process.env.FCM_KEY,
+        "Content-Type": "application/json",
+        Host: "fcm.googleapis.com",
+    };
+
+    axios.post(`${process.env.FCM_URL}/fcm/send`, payload, {
+        headers: headers
+    })
+        .then(function (response) {
+            console.log(response);
+        })
+        .catch(function (error) {
+            console.log('Error: ' + error);
+        });
+}
+
 async function processTransactions() {
     const txs = await Transaction.find() || [];
     console.log(`pulled ${txs.length} transactions`);
@@ -168,11 +214,15 @@ async function processTransactions() {
     if (addressesToDelete.length > 0) {
         await Transaction.deleteMany({ _id: { $in: addressesToDelete } });
     }
-
+    console.log(addressesToSendNotification.length);
     if (addressesToSendNotification.length > 0) {
         for (const tx of addressesToSendNotification) {
             if (tx?.transaction?.os === "ios") {
                 pushAPNS(tx);
+            }
+            console.log(tx?.transaction?.os);
+            if (tx?.transaction?.os === "android") {
+                pushFCM(tx);
             }
         }
     }
